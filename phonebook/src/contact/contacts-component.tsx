@@ -1,56 +1,63 @@
-import React, { Component } from "react";
+import React from "react";
+import styled from "styled-components";
 import { ContactShortDisplay } from "./ContactShortDisplay";
-type ContactsComponentState = {
-	isLoaded: boolean,
-	items: any,
-	error: any,
 
+const ListWrapper = styled.div`
+    max-width: 600px;
+    margin: 20px auto;
+    background: #fff;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+`;
+
+const ContactList = styled.ul`
+    list-style: none;
+    padding: 0;
+    margin: 0;
+`;
+
+const ContactItem = styled.li`
+    background: #f8f9fa;
+    padding: 12px;
+    margin: 5px 0;
+    border-radius: 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+`;
+
+const ContactName = styled.span`
+    font-weight: bold;
+`;
+
+const ContactEmail = styled.span`
+    color: #666;
+`;
+
+const ContactShortDisplayStyled = styled(ContactShortDisplay)`
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+`;
+
+const ContactsComponent = ({ contacts }) => {
+	return (
+		<ListWrapper>
+			<h2>Contacts List</h2>
+			<ContactList>
+				{contacts.length === 0 ? (
+					<p>No contacts available</p>
+				) : (
+					contacts.map((contact, index) => (
+						<ContactItem key={index}>
+							<ContactShortDisplayStyled contact={contact} />
+						</ContactItem>
+					))
+				)}
+			</ContactList>
+		</ListWrapper>
+	);
 };
-class ContactsComponent extends Component<{}, ContactsComponentState> {
-	constructor(props) {
-		super(props);
-		this.state = {
-			error: null,
-			isLoaded: false,
-			items: []
-		};
-	}
-	componentDidMount() {
-		fetch("http://localhost:3001/contacts")
-			.then(res => res.json())
-			.then(
-				result => {
-					console.log(result);
-					this.setState({
-						isLoaded: true,
-						items: result || []
-					});
-				},
-				error => {
-					this.setState({
-						isLoaded: true,
-						error
-					});
-				}
-			);
-	}
-	render() {
-		const { error, isLoaded, items } = this.state;
-		if (error) {
-			return <div>Error: {error.message}</div>;
-		} else if (!isLoaded) {
-			return <div>Loading...</div>;
-		} else {
-			return (
-				<ul>
-					{items.map((item, index) => (
-						<li key={index}>
-							<ContactShortDisplay contact={item} />
-						</li>
-					))}
-				</ul>
-			);
-		}
-	}
-}
+
 export default ContactsComponent;
