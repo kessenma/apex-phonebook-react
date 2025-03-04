@@ -67,10 +67,19 @@ const Button = styled.button`
 const AddButton = styled(Button)`
 	background: #eee;
 	color: #333;
-	margin-right: 10px;
+	margin-top: 10px;
 
 	&:hover {
 		background: #ddd;
+	}
+`;
+
+const SaveAllButton = styled(Button)`
+	background: #28a745;  /* Green to differentiate */
+	margin-top: 15px;
+
+	&:hover {
+		background: #218838;
 	}
 `;
 
@@ -92,49 +101,64 @@ const ContactItem = styled.li`
 export default function ContactForm({ onSuccess, onError }) {
 	const [firstName, setFirstName] = useState("");
 	const [lastName, setLastName] = useState("");
-	const [gender, setGender] = useState(""); // Toggle between "MALE" or "FEMALE"
+	const [gender, setGender] = useState("");
 	const [email, setEmail] = useState("");
 	const [contacts, setContacts] = useState([]);
 
 	const addContactToList = () => {
-		if (!firstName || !lastName || !email || !gender) {
-			alert("All fields are required");
+		if (!firstName.trim() || !lastName.trim() || !email.trim() || !gender) {
+			alert("All fields are required.");
 			return;
 		}
 
-		setContacts([...contacts, { firstName, lastName, email, gender }]);
+		const newContact = { firstName, lastName, email, gender };
+
+		// Ensure no empty contact is added
+		if (Object.values(newContact).some(value => value.trim() === "")) return;
+
+		setContacts([...contacts, newContact]);
+
+		// Reset form fields AFTER adding a valid contact
 		setFirstName("");
 		setLastName("");
 		setEmail("");
-		setGender(""); // Reset gender selection
+		setGender("");
 	};
 
-	const handleSubmit = (event) => {
+	const handleSubmit = async (event) => {
 		event.preventDefault();
 		if (contacts.length === 0) {
 			alert("Add at least one contact before submitting.");
 			return;
 		}
 
-		fetch("http://localhost:3001/contacts/bulk", {
-			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ contacts }),
-		})
-			.then((res) => res.json())
-			.then(
-				(result) => {
-					onSuccess(result);
-					setContacts([]);
-				},
-				(error) => onError(error)
+		try {
+			// Send each contact one by one to /contacts
+			const savePromises = contacts.map(contact =>
+				fetch("http://localhost:3001/contacts", {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify(contact),
+				}).then(res => res.json())
 			);
+
+			// Wait for all contacts to be saved
+			await Promise.all(savePromises);
+
+			// Fetch the updated contact list from the backend
+			const updatedContacts = await fetch("http://localhost:3001/contacts").then(res => res.json());
+
+			onSuccess(updatedContacts); // Update UI with new contacts
+			setContacts([]); // Clear pending contacts
+		} catch (error) {
+			onError(error);
+		}
 	};
 
 	return (
 		<FormWrapper>
 			<h2>Create Contacts</h2>
-			<form onSubmit={handleSubmit}>
+			<form>
 				<label>First Name:</label>
 				<Input type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} required />
 
@@ -155,7 +179,6 @@ export default function ContactForm({ onSuccess, onError }) {
 				<Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
 
 				<AddButton type="button" onClick={addContactToList}>+ Add More</AddButton>
-				<Button type="submit">Save All</Button>
 			</form>
 
 			{contacts.length > 0 && (
@@ -168,6 +191,9 @@ export default function ContactForm({ onSuccess, onError }) {
 							</ContactItem>
 						))}
 					</ContactList>
+
+					{/* "Save All" button only appears when there are pending contacts */}
+					<SaveAllButton onClick={handleSubmit}>Save All</SaveAllButton>
 				</div>
 			)}
 		</FormWrapper>

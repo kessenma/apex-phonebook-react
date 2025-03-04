@@ -22,7 +22,7 @@ function App() {
             {error && <div>Error: {error.message}</div>}
             <ContactForm
                 onError={setError}
-                onSuccess={(newContact) => setContacts(prevContacts => [...prevContacts, newContact])}
+                onSuccess={(newContacts) => setContacts(newContacts)}
             />
             <ContactsComponent contacts={contacts} />
         </div>
